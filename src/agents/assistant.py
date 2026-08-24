@@ -4,26 +4,37 @@ from livekit.agents import Agent, ChatContext, RunContext, function_tool, infere
 
 
 class Assistant(Agent):
-    """General triage and conversational assistant agent."""
+    """General triage and conversational assistant agent named Alex."""
 
     def __init__(self, *, chat_ctx: ChatContext | None = None) -> None:
         super().__init__(
             chat_ctx=chat_ctx,
             llm=inference.LLM(model="google/gemma-4-31b-it"),
+            tts=inference.TTS(
+                model="cartesia/sonic-3.5",
+                voice="9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
+                language="en",
+                extra_kwargs={
+                    "speed": 1.0,
+                    "volume": 1.2,
+                    "emotion": "excited",
+                },
+            ),
             instructions=textwrap.dedent(
                 """\
-                You are the main friendly, reliable voice assistant and central concierge.
+                You are Alex, the friendly, reliable main voice assistant and central concierge.
 
                 # Role & Responsibilities
 
+                - Introduce yourself as Alex.
                 - Greet the user warmly and understand what they need help with.
                 - Answer general questions directly.
                 - When the user requires specialized help, immediately transfer them to the appropriate specialist using the available transfer tools:
-                  * For billing, invoices, payments, subscriptions, or refund inquiries, use `transfer_to_billing`.
-                  * For technical issues, bugs, error messages, or device troubleshooting, use `transfer_to_support`.
-                  * For product recommendations, pricing tiers, or purchase inquiries, use `transfer_to_sales`.
-                  * For scheduling appointments, consultations, or calendar bookings, use `transfer_to_booking`.
-                - When transferring, briefly let the user know you are connecting them to the specialist.
+                  * For billing, invoices, payments, subscriptions, or refund inquiries, use `transfer_to_billing` (Brian in Billing).
+                  * For technical issues, bugs, error messages, or device troubleshooting, use `transfer_to_support` (Sam in Technical Support).
+                  * For product recommendations, pricing tiers, or purchase inquiries, use `transfer_to_sales` (Sarah in Sales).
+                  * For scheduling appointments, consultations, or calendar bookings, use `transfer_to_booking` (Chloe in Booking).
+                - When transferring, briefly let the user know you are connecting them to that specialist.
 
                 # Output rules
 
@@ -53,45 +64,49 @@ class Assistant(Agent):
 
     async def on_enter(self) -> None:
         await self.session.generate_reply(
-            instructions="Greet the user warmly as the main assistant and ask how you can help them today."
+            instructions="Greet the user warmly as Alex, the main assistant, and ask how you can help them today."
         )
 
     @function_tool()
-    async def transfer_to_billing(self, context: RunContext) -> Agent:
-        """Transfer the user to the Billing specialist for payments, invoices, refunds, or subscriptions."""
+    async def transfer_to_billing(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Brian in Billing for payments, invoices, refunds, or subscriptions."""
         from .billing import BillingAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return BillingAgent(chat_ctx=next_ctx)
+        return BillingAgent(chat_ctx=next_ctx), "Connecting you to Brian in Billing."
 
     @function_tool()
-    async def transfer_to_support(self, context: RunContext) -> Agent:
-        """Transfer the user to the Technical Support specialist for technical issues and troubleshooting."""
+    async def transfer_to_support(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Sam in Technical Support for technical issues and troubleshooting."""
         from .support import SupportAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return SupportAgent(chat_ctx=next_ctx)
+        return SupportAgent(
+            chat_ctx=next_ctx
+        ), "Connecting you to Sam in Technical Support."
 
     @function_tool()
-    async def transfer_to_sales(self, context: RunContext) -> Agent:
-        """Transfer the user to the Sales specialist for product plans, pricing, and purchasing."""
+    async def transfer_to_sales(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Sarah in Sales for product plans, pricing, and purchasing."""
         from .sales import SalesAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return SalesAgent(chat_ctx=next_ctx)
+        return SalesAgent(chat_ctx=next_ctx), "Connecting you to Sarah in Sales."
 
     @function_tool()
-    async def transfer_to_booking(self, context: RunContext) -> Agent:
-        """Transfer the user to the Booking specialist for scheduling appointments and reservations."""
+    async def transfer_to_booking(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Chloe in Booking for scheduling appointments and reservations."""
         from .booking import BookingAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return BookingAgent(chat_ctx=next_ctx)
+        return BookingAgent(
+            chat_ctx=next_ctx
+        ), "Connecting you to Chloe in Scheduling and Reservations."

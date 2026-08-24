@@ -4,23 +4,34 @@ from livekit.agents import Agent, ChatContext, RunContext, function_tool, infere
 
 
 class SalesAgent(Agent):
-    """Specialized agent for product discovery, plan recommendations, and sales consultations."""
+    """Specialized agent named Sarah for product discovery, plan recommendations, and sales consultations."""
 
     def __init__(self, *, chat_ctx: ChatContext | None = None) -> None:
         super().__init__(
             chat_ctx=chat_ctx,
             llm=inference.LLM(model="google/gemma-4-31b-it"),
+            tts=inference.TTS(
+                model="cartesia/sonic-3.5",
+                voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",
+                language="en",
+                extra_kwargs={
+                    "speed": 1.05,
+                    "volume": 1.1,
+                    "emotion": "excited",
+                },
+            ),
             instructions=textwrap.dedent(
                 """\
-                You are an energetic, consultative sales specialist helping customers discover solutions, plans, and products tailored to their needs.
+                You are Sarah, an energetic, consultative sales specialist helping customers discover solutions, plans, and products tailored to their needs.
 
                 # Role & Responsibilities
 
+                - Introduce yourself as Sarah from Sales.
                 - Understand customer requirements, business goals, and budget by asking targeted qualifying questions.
                 - Recommend the most suitable product tier, package, or upgrade options.
                 - Highlight key value propositions, features, and advantages clearly.
-                - Once sales questions are answered or when the user indicates they are done (e.g. 'thank you', 'that is all I needed', 'done', 'back to main menu'), politely wrap up and call `return_to_assistant` to automatically redirect them back to the main assistant.
-                - If the user wants to schedule a product demo or consultation, transfer them to booking using `transfer_to_booking`.
+                - Once sales questions are answered or when the user indicates they are done (e.g. 'thank you', 'that is all I needed', 'done', 'back to main menu'), politely wrap up and call `return_to_assistant` to automatically redirect them back to Alex, the main assistant.
+                - If the user wants to schedule a product demo or consultation, transfer them to Chloe in booking using `transfer_to_booking`.
                 - If the user asks for billing or technical support, transfer them directly using the appropriate transfer tool.
 
                 # Output rules
@@ -43,45 +54,51 @@ class SalesAgent(Agent):
 
     async def on_enter(self) -> None:
         await self.session.generate_reply(
-            instructions="Greet the user as the Sales specialist, acknowledge the transfer, and ask how you can help them find the right plan, product, or solution."
+            instructions="Greet the user as Sarah, the Sales specialist, acknowledge the transfer, and ask how you can help them find the right plan, product, or solution."
         )
 
     @function_tool()
-    async def return_to_assistant(self, context: RunContext) -> Agent:
-        """Redirect the user back to the main assistant when their sales inquiry is complete or when they are done."""
+    async def return_to_assistant(self, context: RunContext) -> tuple[Agent, str]:
+        """Redirect the user back to Alex, the main assistant, when their sales inquiry is complete or when they are done."""
         from .assistant import Assistant
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return Assistant(chat_ctx=next_ctx)
+        return Assistant(
+            chat_ctx=next_ctx
+        ), "Transferring you back to Alex, our main assistant."
 
     @function_tool()
-    async def transfer_to_booking(self, context: RunContext) -> Agent:
-        """Transfer the user to Booking to schedule a product demo, consultation, or meeting."""
+    async def transfer_to_booking(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Chloe in Booking to schedule a product demo, consultation, or meeting."""
         from .booking import BookingAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return BookingAgent(chat_ctx=next_ctx)
+        return BookingAgent(
+            chat_ctx=next_ctx
+        ), "Connecting you to Chloe in Scheduling and Reservations."
 
     @function_tool()
-    async def transfer_to_billing(self, context: RunContext) -> Agent:
-        """Transfer the user to Billing for invoices, payments, refunds, or subscriptions."""
+    async def transfer_to_billing(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Brian in Billing for invoices, payments, refunds, or subscriptions."""
         from .billing import BillingAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return BillingAgent(chat_ctx=next_ctx)
+        return BillingAgent(chat_ctx=next_ctx), "Connecting you to Brian in Billing."
 
     @function_tool()
-    async def transfer_to_support(self, context: RunContext) -> Agent:
-        """Transfer the user to Technical Support if they need technical troubleshooting or device assistance."""
+    async def transfer_to_support(self, context: RunContext) -> tuple[Agent, str]:
+        """Transfer the user to Sam in Technical Support if they need technical troubleshooting or device assistance."""
         from .support import SupportAgent
 
         next_ctx = (
             self.chat_ctx.copy(exclude_instructions=True) if self.chat_ctx else None
         )
-        return SupportAgent(chat_ctx=next_ctx)
+        return SupportAgent(
+            chat_ctx=next_ctx
+        ), "Connecting you to Sam in Technical Support."

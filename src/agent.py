@@ -39,9 +39,9 @@ async def my_agent(ctx: JobContext):
             voice="9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
             language="en",
             extra_kwargs={
-                "speed": 1,
+                "speed": 1.0,
                 "volume": 1.2,
-                "emotion": "excited",
+                "emotion": "happy",
             },
         ),
         turn_handling=TurnHandlingOptions(
