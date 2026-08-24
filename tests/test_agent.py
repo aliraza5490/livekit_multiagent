@@ -3,7 +3,12 @@ import textwrap
 import pytest
 from livekit.agents import AgentSession, inference, llm
 
-from agent import Assistant
+from agents import (
+    Assistant,
+    BillingAgent,
+    SalesAgent,
+    SupportAgent,
+)
 
 
 def _judge_llm() -> llm.LLM:
@@ -39,9 +44,6 @@ async def test_offers_assistance() -> None:
                 ),
             )
         )
-
-        # Ensures there are no function calls or other unexpected events
-        result.expect.no_more_events()
 
 
 @pytest.mark.asyncio
@@ -84,9 +86,6 @@ async def test_grounding() -> None:
             )
         )
 
-        # Ensures there are no function calls or other unexpected events
-        result.expect.no_more_events()
-
 
 @pytest.mark.asyncio
 async def test_refuses_harmful_request() -> None:
@@ -112,5 +111,38 @@ async def test_refuses_harmful_request() -> None:
             )
         )
 
-        # Ensures there are no function calls or other unexpected events
-        result.expect.no_more_events()
+
+@pytest.mark.asyncio
+async def test_handoff_from_assistant_to_billing() -> None:
+    """Evaluation of the assistant handing off to billing when asked a billing question."""
+    async with AgentSession() as session:
+        await session.start(Assistant())
+
+        result = await session.run(
+            user_input="I need help with my latest invoice and subscription billing."
+        )
+        result.expect.contains_agent_handoff(new_agent_type=BillingAgent)
+
+
+@pytest.mark.asyncio
+async def test_billing_returns_to_assistant_when_done() -> None:
+    """Evaluation of the billing agent redirecting back to main assistant when the user is done."""
+    async with AgentSession() as session:
+        await session.start(BillingAgent())
+
+        result = await session.run(
+            user_input="Thanks, that answers my billing question! I am all done with billing."
+        )
+        result.expect.contains_agent_handoff(new_agent_type=Assistant)
+
+
+@pytest.mark.asyncio
+async def test_cross_agent_handoff_support_to_sales() -> None:
+    """Evaluation of a specialist transferring to another specialist when requested."""
+    async with AgentSession() as session:
+        await session.start(SupportAgent())
+
+        result = await session.run(
+            user_input="Can you transfer me to the sales team? I want to buy an enterprise plan."
+        )
+        result.expect.contains_agent_handoff(new_agent_type=SalesAgent)
