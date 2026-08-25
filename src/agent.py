@@ -1,3 +1,4 @@
+from openai.types.beta import beta_response_audio_delta_event
 import logging
 
 from dotenv import load_dotenv
@@ -10,7 +11,7 @@ from livekit.agents import (
     inference,
     room_io,
 )
-from livekit.plugins import ai_coustics
+from livekit.plugins import ai_coustics, baseten
 
 from agents import (
     Assistant,
@@ -31,6 +32,7 @@ async def my_agent(ctx: JobContext):
     }
 
     session = AgentSession(
+        llm=inference.LLM(model="google/gemma-4-31b-it"),
         stt=inference.STT(
             model="cartesia/ink-2",
         ),

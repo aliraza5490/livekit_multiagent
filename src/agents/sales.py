@@ -9,7 +9,6 @@ class SalesAgent(Agent):
     def __init__(self, *, chat_ctx: ChatContext | None = None) -> None:
         super().__init__(
             chat_ctx=chat_ctx,
-            llm=inference.LLM(model="google/gemma-4-31b-it"),
             tts=inference.TTS(
                 model="cartesia/sonic-3.5",
                 voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",

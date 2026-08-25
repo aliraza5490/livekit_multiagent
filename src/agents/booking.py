@@ -9,7 +9,6 @@ class BookingAgent(Agent):
     def __init__(self, *, chat_ctx: ChatContext | None = None) -> None:
         super().__init__(
             chat_ctx=chat_ctx,
-            llm=inference.LLM(model="google/gemma-4-31b-it"),
             tts=inference.TTS(
                 model="cartesia/sonic-3.5",
                 voice="79a125e8-cd45-4c13-8a67-188112f4dd22",

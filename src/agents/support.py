@@ -9,7 +9,6 @@ class SupportAgent(Agent):
     def __init__(self, *, chat_ctx: ChatContext | None = None) -> None:
         super().__init__(
             chat_ctx=chat_ctx,
-            llm=inference.LLM(model="google/gemma-4-31b-it"),
             tts=inference.TTS(
                 model="cartesia/sonic-3.5",
                 voice="a0e99841-438c-4a64-b679-ae501e7d6091",
